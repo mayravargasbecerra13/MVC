@@ -4,82 +4,99 @@
  */
 package Servlet;
 
+
+import com.mycompany.mvc.Tarea;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- *
- * @author Personal
- */
+
+    @WebServlet(name = "TareasServlet", urlPatterns = {"/tareas/*"})
 public class TareasServlet extends HttpServlet {
-
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet TareasServlet</title>");            
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet TareasServlet at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
+        
+        @Override
+        protected void doGet (HttpServletRequest request,
+                HttpServletResponse response)
+                throws ServletException, IOException{
+        
+            HttpSession session = request.getSession();
+            List<Tarea> listaTareas = (List<Tarea>)
+                    session.getAttribute("tareas");
+            
+            if(listaTareas == null){
+                listaTareas = new ArrayList<>();
+                session.setAttribute("tareas", listaTareas);
+            }
+            
+            String pathInfo = request.getPathInfo();
+            
+            if(pathInfo == null || "/".equals(pathInfo)){
+                //Listar tareas
+                request.getRequestDispatcher("/WEB-INF/views/listarTareas.jsp").forward(request, response);
+            }else if ("/nueva".equals(pathInfo)){
+                
+                //Formulario nueva tarea
+                request.getRequestDispatcher("/WEB-INF/VIEWS/nuevaTarea.jsp").forward(request, response);
+            }else if (pathInfo.startsWith("/completar")){
+            
+            //completar tarea
+            
+                try {
+                    int id =
+            Integer.parseInt(pathInfo.substring("/complear/".length()));
+                    for(Tarea tarea : listaTareas){
+                        if (tarea.getId() == id){
+                            tarea.setCompletada(true);
+                            break;
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    //Ignorar
+                }
+                response.sendRedirect (request.getContextPath() + "/tareas");
+            }
         }
-    }
+        
+        @Override
+        protected void doPost (HttpServletRequest request, 
+       HttpServletResponse response) 
+        throws ServletException, IOException {
+           
+       HttpSession session = request.getSession();
+       List<Tarea> listaTareas = (List<Tarea>)
+               session.getAttribute("tareas");
+       
+       if  (listaTareas == null){
+           listaTareas = new ArrayList<>();
+           session.setAttribute("tareas", listaTareas);
+       }
+       
+       String pathInfo = request.getPathInfo();
+       
+       if ("/guardar".equals(pathInfo)){
+           String descripcion = request.getParameter("descripcion");
+           
+           if(descripcion != null && !descripcion.trim().isEmpty())
+           {
+           int nuevoId = 1;
+           if(!listaTareas.isEmpty()){
+           
+           nuevoId = listaTareas.get(listaTareas.size()- 1).getId() + 1;
+           }
+           Tarea nuevaTarea = new Tarea(nuevoId, descripcion);
+           listaTareas.add(nuevaTarea);
+           }
+           response.sendRedirect(request.getContextPath() + "/tareas");
+       }
+       
+       }
+        
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
-    }
-
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
-    }
-
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
 
 }
